@@ -1,10 +1,4 @@
-local QBCore = exports['qb-core']:GetCoreObject()
 local positionIndex = 1
-
-local function HasJob(job)
-    local jobname = QBCore.Functions.GetPlayerData().job.name
-    return jobname == job
-end
 
 local function GetResultSuffix(success, chance)
     if success == true then return " ^7(^2Successful:"..tostring(chance).."%^7)"
@@ -19,7 +13,7 @@ local function TriggerOutput(Player, text, offset, action, fullName, success, ch
     local state = { enabled = true }
     local fullText = text .. GetResultSuffix(success, chance)
 
-    if command.JobChat and not HasJob(command.Job) then return end
+    if command.JobChat and not hasJob(command.Job) then return end
 
     positionIndex = positionIndex + 1
 
@@ -136,7 +130,7 @@ function DrawText3D(x,y,z, text, action)
     end
 end
 
-RegisterNetEvent('sayer-medo:PlayerAnimation',function(anim_data)
+RegisterNetEvent('tss-medo:PlayerAnimation',function(anim_data)
     if not anim_data.dict or not anim_data.anim then return end
     local ped = PlayerPedId()
     RequestAnimDict(anim_data.dict)
@@ -148,7 +142,7 @@ RegisterNetEvent('sayer-medo:PlayerAnimation',function(anim_data)
 end)
 
 
-RegisterNetEvent('sayer-medo:sendCommandMessage', function(text, source, output, fullName, success, chance)
+RegisterNetEvent('tss-medo:sendCommandMessage', function(text, source, output, fullName, success, chance)
     local offset = 1 + (positionIndex*0.14)
     TriggerOutput(GetPlayerFromServerId(source), text, offset, output, fullName, success, chance)
 end)

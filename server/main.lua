@@ -1,11 +1,3 @@
-local QBCore = exports['qb-core']:GetCoreObject()
-
-local function HasJob(src, job)
-    local Player = QBCore.Functions.GetPlayer(src)
-    if not Player then return false end
-    return Player.PlayerData.job.name == job
-end
-
 local function handleCommand(source, action, args)
     local config = Config.Commands[action]
     if not config then return end
@@ -21,7 +13,7 @@ local function handleCommand(source, action, args)
     end
 
     if config.JobChat then
-        if not HasJob(source, config.Job) then
+        if not hasJob(config.Job, source) then
             return
         end
     end
@@ -70,15 +62,15 @@ local function handleCommand(source, action, args)
     end
 
     if config.PlayerAnimation then
-        TriggerClientEvent('sayer-medo:PlayerAnimation', source, config.PlayerAnimation)
+        TriggerClientEvent('tss-medo:PlayerAnimation', source, config.PlayerAnimation)
     end
 
     if not text then return end
 
-    local Player = QBCore.Functions.GetPlayer(source)
+    local Player = getPlayer(source)
     if Player then
-        local fullName = Player.PlayerData.charinfo.firstname .. " " .. Player.PlayerData.charinfo.lastname
-        TriggerClientEvent('sayer-medo:sendCommandMessage', -1, text, source, action, fullName, success, chance)
+        local fullName = Player.firstname .. " " .. Player.lastname
+        TriggerClientEvent('tss-medo:sendCommandMessage', -1, text, source, action, fullName, success, chance)
     end
 end
 

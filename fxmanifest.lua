@@ -1,12 +1,14 @@
 fx_version 'cerulean'
 game 'gta5'
+lua54 'yes'
 
-description 'sayer-medo (made for Kaedyss)'
-author 'oosayeroo'
+description 'tss-medo'
+author 'TinySpriteScripts'
 version '1.0.0'
 
 shared_scripts {
     'shared/config.lua',
+    '@jim_bridge/starter.lua',
 }
 
 client_script {
@@ -16,3 +18,5 @@ client_script {
 server_script {
     'server/main.lua'
 }
+
+dependency 'jim_bridge'
