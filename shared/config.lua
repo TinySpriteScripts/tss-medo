@@ -164,6 +164,23 @@ Config = {
                 },
             },
         },
+        ['register_chat_channel'] = {
+            RegisterChatChannel = true,
+            Permission = "admin", --uses the same admin permission pattern as /clearall
+            Chat = {
+                ChatSuggestion = {
+                    CommandName = "/register_chat_channel",
+                    CommandDescription = "Register a channel in tss-chat [Admin]",
+                    CommandArgs = {
+                        { name = "name", help = "Internal channel name" },
+                        { name = "label", help = "Visible channel label", optional = true },
+                        { name = "red", help = "Red colour value (0-255)", type = "number", optional = true, options = { "50", "120", "255" } },
+                        { name = "green", help = "Green colour value (0-255)", type = "number", optional = true, options = { "130", "220", "255" } },
+                        { name = "blue", help = "Blue colour value (0-255)", type = "number", optional = true, options = { "120", "190", "255" } },
+                    },
+                },
+            },
+        },
         -- some job chat commands (will allow jobs to have a private chat)
         ['ems'] = {
             JobChat = true, -- turns this command into jobchat command

@@ -74,19 +74,6 @@ local function TriggerOutput(Player, text, offset, action, fullName, success, ch
 end
 
 
-CreateThread(function()
-    for _, cmd in pairs(Config.Commands) do
-        if cmd.Chat and cmd.Chat.ChatSuggestion then
-            TriggerEvent('chat:addSuggestion',
-                cmd.Chat.ChatSuggestion.CommandName,
-                cmd.Chat.ChatSuggestion.CommandDescription,
-                cmd.Chat.ChatSuggestion.CommandArgs
-            )
-        end
-    end
-end)
-
-
 function DrawText3D(x,y,z, text, action)
     local options = Config.Commands[action].DrawText
     if not options then return end
