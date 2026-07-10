@@ -40,8 +40,15 @@ Need help with setup or encountering issues? Join our Discord: [Join Support Ser
    - utilises jim-bridge
    - Supports QBCore, ESX, QBOX, OX
  - Huge Customisation
-   - configure commands chat or drawtext seperately
+   - configure chat and browser-rendered overhead boxes separately
+   - customize box background, text, border, typography, spacing and positioning
    - change mulitple options for full control over each command
+
+### Overhead UI configuration
+
+Global placement, stacking, visibility, distance scaling and default box styling live in
+`Config.OverheadUI`. Each command can override any default style value inside its
+`Overhead.Style` table. Set a command's `Overhead = false` when it should only appear in chat.
 
 
 ---
@@ -55,6 +62,10 @@ Need help with setup or encountering issues? Join our Discord: [Join Support Ser
 ---
 
 ## 🧾 Changelog
+
+### v1.1
+- Replaced native 3D drawtext with configurable NUI boxes positioned over player heads
+- Added automatic per-player stacking, occlusion handling and distance scaling
 
 ### v1.0
 - Initial tss release

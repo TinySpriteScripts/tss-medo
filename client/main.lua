@@ -1,4 +1,6 @@
-local positionIndex = 1
+local activeLabels = {}
+local nextLabelId = 0
+local uiReady = false
 
 local function GetResultSuffix(success, chance)
     if success == true then return " ^7(^2Successful:"..tostring(chance).."%^7)"
@@ -6,46 +8,72 @@ local function GetResultSuffix(success, chance)
     else return "" end
 end
 
-local function TriggerOutput(Player, text, offset, action, fullName, success, chance)
+local function SendUIConfig()
+    SendNUIMessage({
+        action = 'configure',
+        config = Config.OverheadUI or {}
+    })
+end
+
+local function SendLabel(label)
+    SendNUIMessage({
+        action = 'show',
+        label = {
+            id = label.id,
+            playerId = label.serverId,
+            text = label.text,
+            style = label.style or {}
+        }
+    })
+end
+
+local function AddOverheadLabel(player, serverId, text, overhead)
+    if player == -1 or not NetworkIsPlayerActive(player) then return end
+
+    nextLabelId = nextLabelId + 1
+    local label = {
+        id = ('%s:%s'):format(serverId, nextLabelId),
+        serverId = tostring(serverId),
+        text = text:gsub('%^%d', ''),
+        style = overhead.Style or {},
+        maxDistance = tonumber(overhead.ProximityDistance) or 30.0,
+        expiresAt = GetGameTimer() + ((tonumber(overhead.VisibleTime) or 5) * 1000)
+    }
+
+    activeLabels[label.id] = label
+    if uiReady then SendLabel(label) end
+end
+
+local function TriggerOutput(Player, source, text, action, fullName, success, chance)
     local command = Config.Commands[action]
     if not command then return print("Invalid command:", action) end
 
-    local state = { enabled = true }
     local fullText = text .. GetResultSuffix(success, chance)
 
     if command.JobChat and not hasJob(command.Job) then return end
 
-    positionIndex = positionIndex + 1
-
-    -- 3D Text Thread
-    local drawtext_text = fullText
-    if command.DrawText and command.DrawText.ShowPlayerName then
-        drawtext_text = fullName .. ": " .. drawtext_text
-    end
-    if command.DrawText then
-        CreateThread(function()
-            while state.enabled do
-                Wait(0)
-                local fromCoords = GetEntityCoords(GetPlayerPed(Player))
-                local toCoords = GetEntityCoords(PlayerPedId())
-                if Vdist2(fromCoords, toCoords) < command.DrawText.ProximityDistance then
-                    DrawText3D(fromCoords.x, fromCoords.y, fromCoords.z + offset - 0.1, drawtext_text:gsub("%^%d", ""), action)
-                end
-            end
-            positionIndex = positionIndex - 1
-        end)
+    -- Browser-rendered overhead box
+    local overhead = command.Overhead
+    if (Config.OverheadUI or {}).Enable ~= false and overhead and overhead.Enable ~= false then
+        local overheadText = fullText
+        if overhead.ShowPlayerName then
+            overheadText = fullName .. ': ' .. overheadText
+        end
+        AddOverheadLabel(Player, source, overheadText, overhead)
     end
 
     -- Chat Display
     if command.Chat and command.Chat.Enable then
-        local fromCoords = GetEntityCoords(GetPlayerPed(Player))
-        local toCoords = GetEntityCoords(PlayerPedId())
         local chat_text = fullText
         if command.Chat.ShowPlayerName then
             chat_text = fullName .. ": " .. chat_text
         end
-        if command.Chat.ProximityDistance and Vdist2(fromCoords, toCoords) > command.Chat.ProximityDistance then
-            return
+        if command.Chat.ProximityDistance then
+            if Player == -1 or not NetworkIsPlayerActive(Player) then return end
+            local fromCoords = GetEntityCoords(GetPlayerPed(Player))
+            local toCoords = GetEntityCoords(PlayerPedId())
+            local maxDistance = tonumber(command.Chat.ProximityDistance) or 30.0
+            if Vdist2(fromCoords, toCoords) > (maxDistance * maxDistance) then return end
         end
         
         local icon = "fa-solid fa-comments" -- default fallback
@@ -64,58 +92,116 @@ local function TriggerOutput(Player, text, offset, action, fullName, success, ch
         })
     end
 
-    -- Timer
-    CreateThread(function()
-        if command.DrawText then
-            Wait(command.DrawText.VisibleTime * 1000)
-            state.enabled = false
-        end
-    end)
 end
 
+local function DistanceScale(distance)
+    local options = (Config.OverheadUI or {}).DistanceScaling or {}
+    if options.Enable == false then return 1.0 end
 
-function DrawText3D(x,y,z, text, action)
-    local options = Config.Commands[action].DrawText
-    if not options then return end
+    local nearDistance = tonumber(options.NearDistance) or 2.0
+    local farDistance = tonumber(options.FarDistance) or 30.0
+    local minScale = tonumber(options.MinScale) or 0.7
+    local maxScale = tonumber(options.MaxScale) or 1.0
+    if farDistance <= nearDistance then return maxScale end
 
-    local font_colour = options.Font.Colour
-    local bg_colour = options.Background.Colour
-    local font_style = options.Font.FontID
+    local progress = math.max(0.0, math.min(1.0, (distance - nearDistance) / (farDistance - nearDistance)))
+    return maxScale + ((minScale - maxScale) * progress)
+end
 
-    local onScreen,_x,_y = World3dToScreen2d(x,y,z)
-    local px,py,pz = table.unpack(GetGameplayCamCoord())
-    local dist = GetDistanceBetweenCoords(px,py,pz, x,y,z, 1)
- 
-    local scale = ((1/dist)*2)*(1/GetGameplayCamFov())*120
+CreateThread(function()
+    while true do
+        local uiConfig = Config.OverheadUI or {}
+        local updateInterval = math.max(0, tonumber(uiConfig.UpdateInterval) or 0)
+        Wait(next(activeLabels) and updateInterval or 250)
 
-    if onScreen then
+        local now = GetGameTimer()
+        local groups = {}
 
-        -- Formalize the text
-        SetTextColour(font_colour.r, font_colour.g, font_colour.b, math.floor(font_colour.a * 255))
-        SetTextScale(0.0*scale, 0.4*scale)
-        SetTextFont(font_style)
-        SetTextProportional(1)
-        SetTextCentre(true)
-        if options.Font.AddShadow then
-            SetTextDropshadow(10, 100, 100, 100, 255)
+        for id, label in pairs(activeLabels) do
+            if now >= label.expiresAt then
+                activeLabels[id] = nil
+                if uiReady then
+                    SendNUIMessage({ action = 'remove', id = id })
+                end
+            else
+                local group = groups[label.serverId]
+                if not group then
+                    group = { serverId = label.serverId, labels = {} }
+                    groups[label.serverId] = group
+                end
+                group.labels[#group.labels + 1] = label
+            end
         end
 
-        -- Calculate width and height
-        BeginTextCommandWidth("STRING")
-        AddTextComponentString(text)
-        local height = GetTextScaleHeight(0.45*scale, font_style)
-        local width = EndTextCommandGetWidth(font_style)
-        -- Diplay the text
-        SetTextEntry("STRING")
-        AddTextComponentString(text)
-        EndTextCommandDisplayText(_x, _y)
+        if uiReady then
+            local positions = {}
+            local viewerPed = PlayerPedId()
+            local viewerCoords = GetEntityCoords(viewerPed)
+            local hideForPause = uiConfig.HideWhilePaused ~= false and IsPauseMenuActive()
+            local bone = tonumber(uiConfig.HeadBone) or 31086
+            local headOffset = uiConfig.HeadOffset or {}
 
-        if options.Background.Enable then
-            DrawRect(_x, _y+scale/73, width, height, bg_colour.r, bg_colour.g, bg_colour.b , bg_colour.a)
+            for _, group in pairs(groups) do
+                local player = GetPlayerFromServerId(tonumber(group.serverId))
+                local ped = player ~= -1 and NetworkIsPlayerActive(player) and GetPlayerPed(player) or 0
+                local position = {
+                    id = group.serverId,
+                    visible = false,
+                    labels = {}
+                }
+
+                local canShowSelf = uiConfig.ShowSelf ~= false or player ~= PlayerId()
+                if not hideForPause and canShowSelf and ped ~= 0 and DoesEntityExist(ped) and GetPlayerServerId(player) == tonumber(group.serverId) then
+                    local pedCoords = GetEntityCoords(ped)
+                    local dx = viewerCoords.x - pedCoords.x
+                    local dy = viewerCoords.y - pedCoords.y
+                    local dz = viewerCoords.z - pedCoords.z
+                    local distance = math.sqrt((dx * dx) + (dy * dy) + (dz * dz))
+                    local clearLineOfSight = uiConfig.HideWhenOccluded ~= true
+                        or player == PlayerId()
+                        or HasEntityClearLosToEntity(viewerPed, ped, 17)
+
+                    local headCoords = GetPedBoneCoords(
+                        ped,
+                        bone,
+                        tonumber(headOffset.X) or 0.0,
+                        tonumber(headOffset.Y) or 0.0,
+                        tonumber(headOffset.Z) or 0.35
+                    )
+                    local onScreen, screenX, screenY = World3dToScreen2d(headCoords.x, headCoords.y, headCoords.z)
+
+                    if onScreen and clearLineOfSight then
+                        position.x = screenX
+                        position.y = screenY
+                        position.scale = DistanceScale(distance)
+
+                        for _, label in ipairs(group.labels) do
+                            local labelVisible = distance <= label.maxDistance
+                            position.labels[#position.labels + 1] = { id = label.id, visible = labelVisible }
+                            if labelVisible then position.visible = true end
+                        end
+                    end
+                end
+
+                positions[#positions + 1] = position
+            end
+
+            SendNUIMessage({ action = 'positions', players = positions })
         end
-
     end
-end
+end)
+
+RegisterNUICallback('ready', function(_, cb)
+    uiReady = true
+    SendUIConfig()
+    for _, label in pairs(activeLabels) do SendLabel(label) end
+    cb('ok')
+end)
+
+AddEventHandler('onClientResourceStop', function(resourceName)
+    if resourceName ~= GetCurrentResourceName() then return end
+    SendNUIMessage({ action = 'reset' })
+end)
 
 RegisterNetEvent('tss-medo:PlayerAnimation',function(anim_data)
     if not anim_data.dict or not anim_data.anim then return end
@@ -130,6 +216,5 @@ end)
 
 
 RegisterNetEvent('tss-medo:sendCommandMessage', function(text, source, output, fullName, success, chance)
-    local offset = 1 + (positionIndex*0.14)
-    TriggerOutput(GetPlayerFromServerId(source), text, offset, output, fullName, success, chance)
+    TriggerOutput(GetPlayerFromServerId(source), source, text, output, fullName, success, chance)
 end)

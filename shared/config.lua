@@ -8,6 +8,46 @@ Config = {
     Crafting = { --only here for bridge support
         showItemBox = true,--will only show if your inventory supports it
     },
+    OverheadUI = {
+        Enable = true,
+        ShowSelf = true,           -- show your own command boxes above your character
+        UpdateInterval = 0,       -- 0 updates every frame; 16 is roughly 60 FPS
+        HeadBone = 31086,         -- SKEL_Head
+        HeadOffset = { X = 0.0, Y = 0.0, Z = 0.35 },
+        AnchorOffset = { X = 0, Y = -28 }, -- final screen-space offset in pixels; more negative moves boxes higher
+        StackGap = 6,             -- gap between boxes from the same player
+        HideWhenOccluded = true,
+        HideWhilePaused = true,
+        TransitionDuration = 80,  -- box fade duration in milliseconds
+        DistanceScaling = {
+            Enable = true,
+            NearDistance = 2.0,
+            FarDistance = 30.0,
+            MinScale = 0.72,
+            MaxScale = 1.0,
+        },
+        -- These defaults can be overridden in any command's Overhead.Style table.
+        DefaultStyle = {
+            BackgroundColour = 'rgba(35, 35, 35, 0.88)',
+            TextColour = '#ffffff',
+            BorderColour = 'rgba(255, 255, 255, 0.25)',
+            BorderWidth = 1,
+            BorderStyle = 'solid',
+            BorderRadius = 5,
+            FontFamily = 'Arial, sans-serif',
+            FontSize = 16,
+            FontWeight = 600,
+            LineHeight = 1.25,
+            LetterSpacing = 0,
+            Padding = '7px 10px',
+            MinWidth = 0,
+            MaxWidth = 360,
+            TextAlign = 'center',
+            BoxShadow = '0 3px 12px rgba(0, 0, 0, 0.35)',
+            TextShadow = '0 1px 2px rgba(0, 0, 0, 0.7)',
+            Opacity = 1.0,
+        },
+    },
     Commands = {
         ['me'] = {
             Chat = { --all settings for chat. if you dont want to use chat just set Chat = false
@@ -25,18 +65,14 @@ Config = {
                     },
                 },
             },
-            DrawText = { -- all settings for drawtext option. if you dont want to use drawtext just set DrawText = false
+            Overhead = { -- browser-rendered box; set Overhead = false to disable it
+                Enable = true,
                 ProximityDistance = 30.0,
                 VisibleTime = 5,
                 ShowPlayerName = true,
-                Font = {
-                    FontID = 4, --the font style. find more here https://docs.fivem.net/natives/?_0x66E0276CC5F6B9DA
-                    AddShadow = true, --adds a shadow to the text
-                    Colour = { r = 2, g = 215, b = 252, a = 1.0 }, --drawtext font colour
-                },
-                Background = {
-                    Enable = true, --show drawtext background
-                    Colour = { r = 35, g = 35, b = 35, a = 0.588 }, --background colour
+                Style = {
+                    TextColour = 'rgb(2, 215, 252)',
+                    BorderColour = 'rgba(2, 215, 252, 0.7)',
                 },
             },
         },
@@ -56,18 +92,14 @@ Config = {
                     },
                 },
             },
-            DrawText = { 
+            Overhead = {
+                Enable = true,
                 ProximityDistance = 30.0,
                 VisibleTime = 5,
                 ShowPlayerName = true,
-                Font = {
-                    FontID = 4, 
-                    AddShadow = true, 
-                    Colour = { r = 108, g = 12, b = 176, a = 1.0 }, 
-                },
-                Background = {
-                    Enable = true, 
-                    Colour = { r = 35, g = 35, b = 35, a = 0.588 }, 
+                Style = {
+                    TextColour = 'rgb(173, 97, 224)',
+                    BorderColour = 'rgba(173, 97, 224, 0.7)',
                 },
             },
         },
@@ -90,18 +122,14 @@ Config = {
                     },
                 },
             },
-            DrawText = { 
+            Overhead = {
+                Enable = true,
                 ProximityDistance = 30.0,
                 VisibleTime = 5,
                 ShowPlayerName = true,
-                Font = {
-                    FontID = 4, 
-                    AddShadow = true, 
-                    Colour = { r = 43, g = 237, b = 5, a = 1.0 },
-                },
-                Background = {
-                    Enable = true, 
-                    Colour = { r = 35, g = 35, b = 35, a = 0.588 }, 
+                Style = {
+                    TextColour = 'rgb(43, 237, 5)',
+                    BorderColour = 'rgba(43, 237, 5, 0.7)',
                 },
             },
         },
@@ -127,18 +155,14 @@ Config = {
                     },
                 },
             },
-            DrawText = { 
+            Overhead = {
+                Enable = true,
                 ProximityDistance = 30.0,
                 VisibleTime = 5,
                 ShowPlayerName = true,
-                Font = {
-                    FontID = 4, 
-                    AddShadow = true, 
-                    Colour = { r = 235, g = 182, b = 7, a = 1.0 },
-                },
-                Background = {
-                    Enable = true, 
-                    Colour = { r = 35, g = 35, b = 35, a = 0.588 }, 
+                Style = {
+                    TextColour = 'rgb(235, 182, 7)',
+                    BorderColour = 'rgba(235, 182, 7, 0.7)',
                 },
             },
         },
@@ -200,7 +224,7 @@ Config = {
                     },
                 },
             },
-            DrawText = false,
+            Overhead = false,
         },
         ['pd'] = {
             JobChat = true,
@@ -220,7 +244,7 @@ Config = {
                     },
                 },
             },
-            DrawText = false,
+            Overhead = false,
         },
         ['mech'] = {
             JobChat = true,
@@ -240,7 +264,7 @@ Config = {
                     },
                 },
             },
-            DrawText = false,
+            Overhead = false,
         },
     }
 }
