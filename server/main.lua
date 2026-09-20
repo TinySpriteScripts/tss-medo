@@ -11,57 +11,6 @@ local function handleCommand(source, action, args)
         TriggerClientEvent('chat:clear', -1)
         return
     end
-    if config.RegisterChatChannel then
-        if GetResourceState('tss-chat') ~= 'started' then
-            TriggerClientEvent('chat:addMessage', source, {
-                color = { 255, 0, 0 },
-                args = { 'System', 'tss-chat is not started, so the channel could not be registered.' }
-            })
-            return
-        end
-
-        local name = tostring(args[1] or '')
-        if name == '' then
-            TriggerClientEvent('chat:addMessage', source, {
-                color = { 255, 0, 0 },
-                args = { 'System', 'Usage: /register_chat_channel <name> [label] [red] [green] [blue]' }
-            })
-            return
-        end
-
-        local label = tostring(args[2] or name)
-        local function colour(value, fallback)
-            value = math.floor(tonumber(value) or fallback)
-            return math.max(0, math.min(255, value))
-        end
-
-        local red = colour(args[3], 50)
-        local green = colour(args[4], 220)
-        local blue = colour(args[5], 190)
-        local ok, registered = pcall(function()
-            return exports['tss-chat']:RegisterChannel(name, {
-                label = label,
-                description = ('Channel registered by tss-medo: %s'):format(label),
-                color = { red, green, blue }
-            })
-        end)
-
-        if not ok or not registered then
-            TriggerClientEvent('chat:addMessage', source, {
-                color = { 255, 0, 0 },
-                args = { 'System', 'The tss-chat channel could not be registered.' }
-            })
-            return
-        end
-
-        exports['tss-chat']:AddMessage(source, {
-            channel = name,
-            color = { red, green, blue },
-            args = { 'tss-medo', ('Registered the %s chat channel.'):format(label:upper()) }
-        })
-        return
-    end
-
     if config.JobChat then
         if not hasJob(config.Job, source) then
             return
@@ -168,7 +117,6 @@ local function argumentMetadata(commandConfig)
 end
 
 local function commandCategory(commandConfig)
-    if commandConfig.RegisterChatChannel then return 'admin' end
     if commandConfig.JobChat then return 'job chat' end
     if commandConfig.ClearChatForSelf or commandConfig.ClearChatForAll then return 'chat' end
     return 'roleplay'
